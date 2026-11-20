@@ -109,7 +109,8 @@ class MainActivity : ComponentActivity() {
             setPadding(18, 24, 18, 28)
             setBackgroundColor(android.graphics.Color.rgb(8, 13, 25))
         }
-        // The old 2 KB compressed hero banner was visibly blurry; keep the header clean and logo-led.\n\n        val brandHeader = LinearLayout(this).apply {
+        // The old compressed hero banner was blurry; keep the header clean and logo-led.
+        val brandHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(14, 14, 14, 14)
