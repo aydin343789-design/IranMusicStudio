@@ -109,16 +109,7 @@ class MainActivity : ComponentActivity() {
             setPadding(18, 24, 18, 28)
             setBackgroundColor(android.graphics.Color.rgb(8, 13, 25))
         }
-        val heroArtwork = assets.open("pahlavi_hero.webp").use { BitmapFactory.decodeStream(it) }
-        page.addView(ImageView(this).apply {
-            setImageBitmap(heroArtwork)
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            background = roundedPanel(0xFF080D16.toInt(), 0xFF80602F.toInt(), 18f)
-            clipToOutline = true
-            contentDescription = "بنر هنری استودیو پهلوی با پرچم شیر و خورشید و پرتره‌های تاریخی"
-        }, LinearLayout.LayoutParams(-1, 112).apply { bottomMargin = 14 })
-
-        val brandHeader = LinearLayout(this).apply {
+        // The old 2 KB compressed hero banner was visibly blurry; keep the header clean and logo-led.\n\n        val brandHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(14, 14, 14, 14)
@@ -127,7 +118,7 @@ class MainActivity : ComponentActivity() {
         brandHeader.addView(ImageView(this).apply {
             setImageResource(R.drawable.pahlavi_logo)
             scaleType = ImageView.ScaleType.FIT_CENTER
-        }, LinearLayout.LayoutParams(82, 82))
+        }, LinearLayout.LayoutParams(96, 96))
         val brandTitles = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(14, 0, 0, 0)
