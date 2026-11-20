@@ -9,6 +9,7 @@ import androidx.media3.effect.CanvasOverlay
 import kotlin.math.*
 
 @UnstableApi
+@UnstableApi
 class StudioSpectrumOverlay(
     private val spectrumFrames: Array<FloatArray>,
     private val style: Int
