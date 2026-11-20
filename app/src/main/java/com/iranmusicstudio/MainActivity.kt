@@ -238,7 +238,7 @@ class MainActivity : ComponentActivity() {
                 val frames = AudioSpectrumAnalyzer.analyze(this, audio)
                 runOnUiThread {
                     isAnalyzingAudio = false
-                    startExportWithSpectrum(background, durationMs, frames)
+                    startExportWithSpectrum(audio, background, durationMs, frames)
                 }
             } catch (e: Exception) {
                 runOnUiThread {
@@ -249,7 +249,7 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun startExportWithSpectrum(background: Uri, durationMs: Long, frames: Array<FloatArray>) {
+    private fun startExportWithSpectrum(audio: Uri, background: Uri, durationMs: Long, frames: Array<FloatArray>) {
         val isImage = contentResolver.getType(background)?.startsWith("image/") == true
         val overlay = StudioSpectrumOverlay(frames, visualStyle)
         val overlayEffect = OverlayEffect(listOf(overlay))
@@ -265,7 +265,7 @@ class MainActivity : ComponentActivity() {
                 .setEffects(effects)
                 .build()
         }
-        val audioItem = EditedMediaItem.Builder(MediaItem.fromUri(selectedAudio!!)).build()
+        val audioItem = EditedMediaItem.Builder(MediaItem.fromUri(audio)).build()
         val videoSequenceBuilder = EditedMediaItemSequence.Builder().addItems(listOf(videoItem))
         if (!isImage) videoSequenceBuilder.setIsLooping(true)
         val videoSequence = videoSequenceBuilder.build()
