@@ -16,6 +16,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -166,13 +167,18 @@ class MainActivity : ComponentActivity() {
         }, matchWrap())
 
         page.addView(sectionTitle("۳  ·  انتخاب طرح اکولایزر"), matchWrap())
-        val styles = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        styles.addView(styleButton("میله‌ای", 0), LinearLayout.LayoutParams(0, -2, 1f))
-        styles.addView(styleButton("موجی", 1), LinearLayout.LayoutParams(0, -2, 1f))
-        styles.addView(styleButton("ضربانی", 2), LinearLayout.LayoutParams(0, -2, 1f))
-        page.addView(styles, matchWrap())
+        val styles = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            listOf("خطی", "دایره‌ای", "شعاعی", "موجی", "نقطه‌ای", "طیفی").forEachIndexed { index, label ->
+                addView(styleButton(label, index), LinearLayout.LayoutParams(76, -2).apply { marginEnd = 7 })
+            }
+        }
+        page.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(styles)
+        }, matchWrap())
         spectrum = SpectrumView(this)
-        page.addView(spectrum, LinearLayout.LayoutParams(-1, 150))
+        page.addView(spectrum, LinearLayout.LayoutParams(-1, 176))
 
         page.addView(sectionTitle("پخش موسیقی"), matchWrap())
         page.addView(PlayerView(this).apply {
@@ -186,7 +192,7 @@ class MainActivity : ComponentActivity() {
         status = info("برای شروع، موسیقی و پس‌زمینه را انتخاب کن.")
         page.addView(status, matchWrap())
         page.addView(TextView(this).apply {
-            text = "فایل نهایی در پوشه Movies/PahlaviStudio ذخیره می‌شود. اکولایزر این نسخه در پیش‌نمایش زنده فعال است؛ رندر اکولایزر داخل MP4 را در مرحلهٔ بعد به موتور خروجی اضافه می‌کنیم."
+            text = "فایل نهایی در پوشه Movies/PahlaviStudio ذخیره می‌شود. شش طرح اکولایزر زنده در پیش‌نمایش قابل انتخاب‌اند؛ لایه‌گذاری اکولایزر روی MP4 هنوز در حال پیاده‌سازی است."
             textSize = 11f
             setTextColor(android.graphics.Color.rgb(165, 174, 190))
             setPadding(4, 14, 4, 4)
@@ -404,28 +410,24 @@ class MainActivity : ComponentActivity() {
 
 class SpectrumView(context: android.content.Context) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var levels = FloatArray(44) { 0.025f }
+    private var levels = FloatArray(48) { 0.025f }
     private var style = 0
-
-    fun setStyle(value: Int) { style = value; invalidate() }
+    fun setStyle(value: Int) { style = value.coerceIn(0, 5); invalidate() }
 
     fun updateFft(fft: ByteArray) {
         val targets = FloatArray(levels.size)
         val maxBin = (fft.size / 2 - 1).coerceAtLeast(2)
         for (i in targets.indices) {
-            val low = (kotlin.math.exp(kotlin.math.ln(2.0) +
-                (i.toDouble() / targets.size) * kotlin.math.ln(maxBin.toDouble() / 2.0))).toInt().coerceIn(1, maxBin)
-            val high = (kotlin.math.exp(kotlin.math.ln(2.0) +
-                ((i + 1).toDouble() / targets.size) * kotlin.math.ln(maxBin.toDouble() / 2.0))).toInt()
-                .coerceIn(low + 1, maxBin + 1)
+            val low = (kotlin.math.exp(kotlin.math.ln(2.0) + (i.toDouble() / targets.size) *
+                kotlin.math.ln(maxBin.toDouble() / 2.0))).toInt().coerceIn(1, maxBin)
+            val high = (kotlin.math.exp(kotlin.math.ln(2.0) + ((i + 1).toDouble() / targets.size) *
+                kotlin.math.ln(maxBin.toDouble() / 2.0))).toInt().coerceIn(low + 1, maxBin + 1)
             var peak = 0.0
             for (bin in low until high) {
                 val index = bin * 2
                 if (index + 1 < fft.size) {
-                    val re = fft[index].toInt()
-                    val im = fft[index + 1].toInt()
-                    val magnitude = kotlin.math.sqrt((re * re + im * im).toDouble())
-                    if (magnitude > peak) peak = magnitude
+                    val re = fft[index].toInt(); val im = fft[index + 1].toInt()
+                    peak = maxOf(peak, kotlin.math.sqrt((re * re + im * im).toDouble()))
                 }
             }
             targets[i] = ((kotlin.math.ln(1.0 + peak) / kotlin.math.ln(129.0)) * 0.96 + 0.025)
@@ -433,7 +435,7 @@ class SpectrumView(context: android.content.Context) : View(context) {
         }
         post {
             for (i in levels.indices) {
-                val factor = if (targets[i] > levels[i]) 0.42f else 0.16f
+                val factor = if (targets[i] > levels[i]) 0.34f else 0.12f
                 levels[i] += (targets[i] - levels[i]) * factor
             }
             invalidate()
@@ -443,51 +445,72 @@ class SpectrumView(context: android.content.Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawColor(0xFF0B111B.toInt())
-        val gold = 0xFFE4B85F.toInt()
-        val paleGold = 0xFFFFE6A8.toInt()
-        val centerY = height * 0.53f
-        paint.color = 0xFF293241.toInt()
-        paint.strokeWidth = 1f
-        canvas.drawLine(14f, centerY, width - 14f, centerY, paint)
-
-        val count = levels.size
-        val gap = 4f
-        val barWidth = ((width - 36f - gap * (count - 1)) / count).coerceAtLeast(1f)
-        val maxHeight = height * 0.72f
-
-        if (style == 1) {
-            val path = android.graphics.Path()
-            for (i in levels.indices) {
-                val x = 18f + i * (barWidth + gap) + barWidth / 2f
-                val y = centerY - levels[i] * maxHeight * 0.48f
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        val gold = 0xFFE4B85F.toInt(); val pale = 0xFFFFE6A8.toInt()
+        val cx = width / 2f; val cy = height / 2f
+        val side = minOf(width, height).toFloat()
+        paint.style = Paint.Style.STROKE; paint.strokeWidth = 1f; paint.color = 0xFF293241.toInt()
+        canvas.drawLine(18f, height - 16f, width - 18f, height - 16f, paint)
+        paint.style = Paint.Style.FILL
+        when (style) {
+            0, 5 -> {
+                val gap = if (style == 0) 3f else 2f
+                val bw = ((width - 36f - gap * (levels.size - 1)) / levels.size).coerceAtLeast(1f)
+                val base = height - 17f
+                levels.forEachIndexed { i, v ->
+                    val h = (v * height * if (style == 0) 0.70f else 0.82f).coerceAtLeast(2.5f)
+                    val x = 18f + i * (bw + gap)
+                    paint.color = if (i % 6 == 0) pale else gold
+                    canvas.drawRoundRect(x, base - h, x + bw, base, bw / 2, bw / 2, paint)
+                }
             }
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 2.4f
-            paint.strokeCap = Paint.Cap.ROUND
-            paint.color = paleGold
-            canvas.drawPath(path, paint)
-            paint.style = Paint.Style.FILL
-            for (i in levels.indices step 4) {
-                val x = 18f + i * (barWidth + gap) + barWidth / 2f
-                val y = centerY - levels[i] * maxHeight * 0.48f
-                paint.color = gold
-                canvas.drawCircle(x, y, 2.2f, paint)
+            1, 2 -> {
+                val radius = if (style == 1) side * 0.25f else side * 0.10f
+                paint.style = Paint.Style.STROKE; paint.strokeCap = Paint.Cap.ROUND
+                paint.strokeWidth = if (style == 1) 3f else 3.4f
+                if (style == 1) {
+                    paint.strokeWidth = 1.2f; paint.color = 0x665C4A2D
+                    canvas.drawCircle(cx, cy, radius, paint)
+                }
+                levels.forEachIndexed { i, v ->
+                    val angle = Math.toRadians(i * 360.0 / levels.size - 90.0)
+                    val inner = radius + if (style == 1) 5f else 8f
+                    val outer = inner + (if (style == 1) 5f else 8f) + v * side * if (style == 1) 0.16f else 0.29f
+                    paint.color = if (i % 4 == 0) pale else gold
+                    canvas.drawLine(cx + kotlin.math.cos(angle).toFloat() * inner,
+                        cy + kotlin.math.sin(angle).toFloat() * inner,
+                        cx + kotlin.math.cos(angle).toFloat() * outer,
+                        cy + kotlin.math.sin(angle).toFloat() * outer, paint)
+                }
+                paint.style = Paint.Style.FILL
+                if (style == 1) { paint.color = pale; canvas.drawCircle(cx, cy, 2.5f, paint) }
             }
-            return
+            3 -> {
+                val path = android.graphics.Path()
+                levels.forEachIndexed { i, v ->
+                    val x = 18f + i * (width - 36f) / (levels.size - 1)
+                    val y = cy - (v - 0.08f) * height * 0.65f
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                paint.style = Paint.Style.STROKE; paint.strokeWidth = 2.2f
+                paint.strokeCap = Paint.Cap.ROUND; paint.strokeJoin = Paint.Join.ROUND
+                paint.color = 0x44E4B85F; paint.strokeWidth = 7f; canvas.drawPath(path, paint)
+                paint.color = pale; paint.strokeWidth = 2.2f; canvas.drawPath(path, paint)
+            }
+            4 -> {
+                val cols = 24; val step = (width - 40f) / cols
+                for (i in 0 until cols) {
+                    val v = levels[i * levels.size / cols]
+                    val x = 20f + i * step + step / 2f
+                    val rows = (v * 9f).toInt().coerceIn(1, 9)
+                    for (j in 0 until rows) {
+                        val y = cy - (j + 1) * 7f / 1.6f
+                        paint.color = if (j == rows - 1) pale else gold
+                        canvas.drawCircle(x, y, 2.1f, paint)
+                        canvas.drawCircle(x, height - y, 2.1f, paint)
+                    }
+                }
+            }
         }
-
-        levels.forEachIndexed { i, level ->
-            val x = 18f + i * (barWidth + gap)
-            val h = (level * maxHeight).coerceAtLeast(3f)
-            paint.color = if (i % 4 == 0) paleGold else gold
-            if (style == 0) {
-                canvas.drawRoundRect(x, centerY - h, x + barWidth, centerY, barWidth / 2, barWidth / 2, paint)
-            } else {
-                val radius = (barWidth * 0.46f).coerceAtLeast(1.2f)
-                canvas.drawCircle(x + barWidth / 2, centerY - h * 0.58f, radius, paint)
-                canvas.drawCircle(x + barWidth / 2, centerY + h * 0.58f, radius, paint)
-            }
-        }
+        paint.style = Paint.Style.FILL; paint.strokeCap = Paint.Cap.BUTT
     }
 }
