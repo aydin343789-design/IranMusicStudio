@@ -27,8 +27,11 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
+import androidx.media3.common.Effects
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.effect.OverlayEffect
+import androidx.media3.effect.Presentation
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
@@ -52,6 +55,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var videoLabel: TextView
     private lateinit var status: TextView
     private var visualStyle = 0
+    private var isAnalyzingAudio = false
 
     private val pickAudio = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
@@ -213,8 +217,8 @@ class MainActivity : ComponentActivity() {
             status.text = "برای ساخت ویدئو، ابتدا موسیقی و پس‌زمینه را انتخاب کن."
             return
         }
-        if (transformer != null) {
-            status.text = "ساخت ویدئو در حال انجام است؛ لطفاً صبر کن."
+        if (transformer != null || isAnalyzingAudio) {
+            status.text = "آماده‌سازی یا ساخت ویدئو در حال انجام است؛ لطفاً صبر کن."
             return
         }
         val durationMs = try {
@@ -227,26 +231,51 @@ class MainActivity : ComponentActivity() {
             status.text = "مدت آهنگ خوانده نشد؛ لطفاً فایل دیگری انتخاب کن."
             return
         }
+        isAnalyzingAudio = true
+        status.text = "در حال تحلیل فرکانس‌های واقعی آهنگ برای هماهنگی اکولایزر با صدا…"
+        Thread {
+            try {
+                val frames = AudioSpectrumAnalyzer.analyze(this, audio)
+                runOnUiThread {
+                    isAnalyzingAudio = false
+                    startExportWithSpectrum(background, durationMs, frames)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    isAnalyzingAudio = false
+                    status.text = "تحلیل صوت برای اکولایزر ناموفق بود: ${e.message ?: "خطای ناشناخته"}"
+                }
+            }
+        }.start()
+    }
 
+    private fun startExportWithSpectrum(background: Uri, durationMs: Long, frames: Array<FloatArray>) {
         val isImage = contentResolver.getType(background)?.startsWith("image/") == true
+        val overlay = StudioSpectrumOverlay(frames, visualStyle)
+        val overlayEffect = OverlayEffect(listOf(overlay))
+        val videoEffects = listOf(Presentation.createForHeight(1080), overlayEffect)
+        val effects = Effects(emptyList(), videoEffects)
         val videoItem = if (isImage) {
             val image = MediaItem.Builder().setUri(background).setImageDurationMs(durationMs).build()
-            EditedMediaItem.Builder(image).setFrameRate(30).build()
+            EditedMediaItem.Builder(image).setFrameRate(30).setEffects(effects).build()
         } else {
-            EditedMediaItem.Builder(MediaItem.fromUri(background)).setRemoveAudio(true).build()
+            EditedMediaItem.Builder(MediaItem.fromUri(background))
+                .setRemoveAudio(true)
+                .setFrameRate(30)
+                .setEffects(effects)
+                .build()
         }
-        val audioItem = EditedMediaItem.Builder(MediaItem.fromUri(audio)).build()
-        val videoSequenceBuilder = EditedMediaItemSequence.Builder()
-            .addItems(listOf(videoItem))
+        val audioItem = EditedMediaItem.Builder(MediaItem.fromUri(selectedAudio!!)).build()
+        val videoSequenceBuilder = EditedMediaItemSequence.Builder().addItems(listOf(videoItem))
         if (!isImage) videoSequenceBuilder.setIsLooping(true)
         val videoSequence = videoSequenceBuilder.build()
-        val audioSequence = EditedMediaItemSequence.Builder()
-            .addItems(listOf(audioItem))
-            .build()
+        val audioSequence = EditedMediaItemSequence.Builder().addItems(listOf(audioItem)).build()
         val composition = Composition.Builder(videoSequence, audioSequence).build()
-        val output = File(cacheDir, "iran_studio_${System.currentTimeMillis()}.mp4")
-
-        status.text = if (isImage) "در حال ساخت ویدئو؛ تصویر تا پایان آهنگ نمایش داده می‌شود…" else "در حال ساخت ویدئو؛ کلیپ کوتاه در صورت نیاز تکرار و انتهای کلیپ بلند با پایان آهنگ هماهنگ می‌شود…"
+        val output = File(cacheDir, "pahlavi_studio_${System.currentTimeMillis()}.mp4")
+        status.text = if (isImage)
+            "در حال ساخت موزیک‌ویدئوی 1080p؛ اکولایزر واقعی روی تصویر رندر می‌شود…"
+        else
+            "در حال ساخت موزیک‌ویدئوی 1080p؛ اکولایزر واقعی روی ویدئو رندر می‌شود و طول کلیپ با آهنگ هماهنگ خواهد شد…"
         val engine = Transformer.Builder(this)
             .setVideoMimeType(MimeTypes.VIDEO_H264)
             .addListener(object : Transformer.Listener {
@@ -254,7 +283,7 @@ class MainActivity : ComponentActivity() {
                     transformer = null
                     try {
                         saveToMovies(output)
-                        status.text = "✓ موزیک‌ویدئو در Movies/PahlaviStudio ذخیره شد."
+                        status.text = "✓ موزیک‌ویدئو با اکولایزر در Movies/PahlaviStudio ذخیره شد."
                     } catch (e: Exception) {
                         status.text = "خروجی ساخته شد اما ذخیره‌سازی ناموفق بود: ${e.message}"
                     }
