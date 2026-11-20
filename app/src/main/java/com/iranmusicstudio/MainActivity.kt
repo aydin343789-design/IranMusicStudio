@@ -208,9 +208,13 @@ class MainActivity : ComponentActivity() {
             EditedMediaItem.Builder(MediaItem.fromUri(background)).setRemoveAudio(true).build()
         }
         val audioItem = EditedMediaItem.Builder(MediaItem.fromUri(audio)).build()
-        var videoSequence = EditedMediaItemSequence.withVideoFrom(listOf(videoItem))
+        var videoSequence = EditedMediaItemSequence.Builder()
+            .addItems(listOf(videoItem))
+            .build()
         if (!isImage) videoSequence = videoSequence.buildUpon().setIsLooping(true).build()
-        val audioSequence = EditedMediaItemSequence.withAudioFrom(listOf(audioItem))
+        val audioSequence = EditedMediaItemSequence.Builder()
+            .addItems(listOf(audioItem))
+            .build()
         val composition = Composition.Builder(videoSequence, audioSequence).build()
         val output = File(cacheDir, "iran_studio_${System.currentTimeMillis()}.mp4")
 
