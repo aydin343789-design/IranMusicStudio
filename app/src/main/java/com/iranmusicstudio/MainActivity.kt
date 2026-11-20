@@ -208,10 +208,10 @@ class MainActivity : ComponentActivity() {
             EditedMediaItem.Builder(MediaItem.fromUri(background)).setRemoveAudio(true).build()
         }
         val audioItem = EditedMediaItem.Builder(MediaItem.fromUri(audio)).build()
-        var videoSequence = EditedMediaItemSequence.Builder()
+        val videoSequenceBuilder = EditedMediaItemSequence.Builder()
             .addItems(listOf(videoItem))
-            .build()
-        if (!isImage) videoSequence = videoSequence.buildUpon().setIsLooping(true).build()
+        if (!isImage) videoSequenceBuilder.setIsLooping(true)
+        val videoSequence = videoSequenceBuilder.build()
         val audioSequence = EditedMediaItemSequence.Builder()
             .addItems(listOf(audioItem))
             .build()
