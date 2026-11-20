@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Canvas
+import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.media.MediaMetadataRetriever
 import android.media.audiofx.Visualizer
@@ -108,6 +109,15 @@ class MainActivity : ComponentActivity() {
             setPadding(18, 24, 18, 28)
             setBackgroundColor(android.graphics.Color.rgb(8, 13, 25))
         }
+        val heroArtwork = assets.open("pahlavi_hero.webp").use { BitmapFactory.decodeStream(it) }
+        page.addView(ImageView(this).apply {
+            setImageBitmap(heroArtwork)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = roundedPanel(0xFF080D16.toInt(), 0xFF80602F.toInt(), 18f)
+            clipToOutline = true
+            contentDescription = "بنر هنری استودیو پهلوی با پرچم شیر و خورشید و پرتره‌های تاریخی"
+        }, LinearLayout.LayoutParams(-1, 112).apply { bottomMargin = 14 })
+
         val brandHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
