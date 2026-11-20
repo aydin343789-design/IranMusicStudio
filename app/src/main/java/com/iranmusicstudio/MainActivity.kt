@@ -15,9 +15,11 @@ import android.provider.MediaStore
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.graphics.drawable.GradientDrawable
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -101,21 +103,41 @@ class MainActivity : ComponentActivity() {
             setPadding(18, 24, 18, 28)
             setBackgroundColor(android.graphics.Color.rgb(8, 13, 25))
         }
-        page.addView(TextView(this).apply {
-            text = "IRAN MUSIC STUDIO"
-            textSize = 25f
-            gravity = Gravity.CENTER
-            letterSpacing = 0.12f
-            setTextColor(android.graphics.Color.rgb(230, 190, 112))
-            setPadding(0, 8, 0, 2)
-        }, matchWrap())
-        page.addView(TextView(this).apply {
-            text = "استودیوی ساخت موزیک‌ویدئو"
-            textSize = 14f
-            gravity = Gravity.CENTER
-            setTextColor(android.graphics.Color.LTGRAY)
-            setPadding(0, 0, 0, 20)
-        }, matchWrap())
+        val brandHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(14, 14, 14, 14)
+            background = roundedPanel(0xFF111722.toInt(), 0xFF80602F.toInt(), 22f)
+        }
+        brandHeader.addView(ImageView(this).apply {
+            setImageResource(R.drawable.pahlavi_logo)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }, LinearLayout.LayoutParams(82, 82))
+        val brandTitles = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(14, 0, 0, 0)
+            addView(TextView(this@MainActivity).apply {
+                text = "استودیو پهلوی"
+                textSize = 24f
+                setTextColor(0xFFE7C27A.toInt())
+                typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
+            }, matchWrap())
+            addView(TextView(this@MainActivity).apply {
+                text = "PAHLAVI STUDIO  •  MUSIC & VIDEO"
+                textSize = 10f
+                letterSpacing = 0.12f
+                setTextColor(0xFFB8A27C.toInt())
+                setPadding(0, 4, 0, 0)
+            }, matchWrap())
+            addView(TextView(this@MainActivity).apply {
+                text = "ساخت موزیک‌ویدئو با جلوه‌های صوتی"
+                textSize = 12f
+                setTextColor(0xFFD4D8E0.toInt())
+                setPadding(0, 7, 0, 0)
+            }, matchWrap())
+        }
+        brandHeader.addView(brandTitles, LinearLayout.LayoutParams(0, -2, 1f))
+        page.addView(brandHeader, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 18 })
 
         page.addView(sectionTitle("۱  ·  انتخاب موسیقی"), matchWrap())
         songLabel = info("هنوز آهنگی انتخاب نشده")
@@ -164,7 +186,7 @@ class MainActivity : ComponentActivity() {
         status = info("برای شروع، موسیقی و پس‌زمینه را انتخاب کن.")
         page.addView(status, matchWrap())
         page.addView(TextView(this).apply {
-            text = "فایل نهایی در پوشه Movies/IranMusicStudio ذخیره می‌شود. طرح اکولایزر فعلاً در پیش‌نمایش زنده است و در خروجی MP4 به مرحلهٔ بعد اضافه خواهد شد."
+            text = "فایل نهایی در پوشه Movies/PahlaviStudio ذخیره می‌شود. اکولایزر این نسخه در پیش‌نمایش زنده فعال است؛ رندر اکولایزر داخل MP4 را در مرحلهٔ بعد به موتور خروجی اضافه می‌کنیم."
             textSize = 11f
             setTextColor(android.graphics.Color.rgb(165, 174, 190))
             setPadding(4, 14, 4, 4)
@@ -218,7 +240,7 @@ class MainActivity : ComponentActivity() {
         val composition = Composition.Builder(videoSequence, audioSequence).build()
         val output = File(cacheDir, "iran_studio_${System.currentTimeMillis()}.mp4")
 
-        status.text = "در حال ترکیب موسیقی و پس‌زمینه… لطفاً برنامه را نبند."
+        status.text = if (isImage) "در حال ساخت ویدئو؛ تصویر تا پایان آهنگ نمایش داده می‌شود…" else "در حال ساخت ویدئو؛ کلیپ کوتاه در صورت نیاز تکرار و انتهای کلیپ بلند با پایان آهنگ هماهنگ می‌شود…"
         val engine = Transformer.Builder(this)
             .setVideoMimeType(MimeTypes.VIDEO_H264)
             .addListener(object : Transformer.Listener {
@@ -226,7 +248,7 @@ class MainActivity : ComponentActivity() {
                     transformer = null
                     try {
                         saveToMovies(output)
-                        status.text = "✓ موزیک‌ویدئو با موفقیت در پوشه Movies/IranMusicStudio ذخیره شد."
+                        status.text = "✓ موزیک‌ویدئو در Movies/PahlaviStudio ذخیره شد."
                     } catch (e: Exception) {
                         status.text = "خروجی ساخته شد اما ذخیره‌سازی ناموفق بود: ${e.message}"
                     }
@@ -253,12 +275,12 @@ class MainActivity : ComponentActivity() {
 
     private fun saveToMovies(file: File) {
         if (!file.exists() || file.length() == 0L) error("فایل خروجی خالی است")
-        val name = "IranMusicStudio_${System.currentTimeMillis()}.mp4"
+        val name = "PahlaviStudio_${System.currentTimeMillis()}.mp4"
         if (Build.VERSION.SDK_INT >= 29) {
             val values = ContentValues().apply {
                 put(MediaStore.Video.Media.DISPLAY_NAME, name)
                 put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/IranMusicStudio")
+                put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/PahlaviStudio")
                 put(MediaStore.Video.Media.IS_PENDING, 1)
             }
             val uri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
@@ -326,19 +348,28 @@ class MainActivity : ComponentActivity() {
         setTextColor(android.graphics.Color.WHITE)
         setPadding(5, 8, 5, 8)
     }
+    private fun roundedPanel(fill: Int, stroke: Int, radius: Float) = GradientDrawable().apply {
+        setColor(fill)
+        cornerRadius = radius
+        setStroke(1, stroke)
+    }
     private fun actionButton(value: String, action: () -> Unit) = Button(this).apply {
         text = value
         textSize = 13f
-        setTextColor(android.graphics.Color.rgb(13, 18, 29))
-        setBackgroundColor(android.graphics.Color.rgb(220, 181, 105))
+        isAllCaps = false
+        setTextColor(0xFFFFE7B5.toInt())
+        background = roundedPanel(0xFF20202A.toInt(), 0xFFB58A45.toInt(), 18f)
+        setPadding(18, 12, 18, 12)
         setOnClickListener { action() }
     }
     private fun styleButton(value: String, style: Int) = Button(this).apply {
         text = value
         textSize = 11f
-        setTextColor(android.graphics.Color.WHITE)
-        setBackgroundColor(if (visualStyle == style) android.graphics.Color.rgb(65, 105, 91)
-            else android.graphics.Color.rgb(34, 43, 60))
+        isAllCaps = false
+        setTextColor(0xFFFFE8BE.toInt())
+        background = roundedPanel(if (visualStyle == style) 0xFF49371F.toInt() else 0xFF171E2A.toInt(),
+            if (visualStyle == style) 0xFFE0B35E.toInt() else 0xFF465064.toInt(), 14f)
+        setPadding(5, 10, 5, 10)
         setOnClickListener {
             visualStyle = style
             spectrum.setStyle(style)
@@ -346,8 +377,9 @@ class MainActivity : ComponentActivity() {
             (parent as? LinearLayout)?.let { row ->
                 for (i in 0 until row.childCount) {
                     val child = row.getChildAt(i) as? Button
-                    child?.setBackgroundColor(if (i == style) android.graphics.Color.rgb(65, 105, 91)
-                        else android.graphics.Color.rgb(34, 43, 60))
+                    child?.background = roundedPanel(
+                        if (i == style) 0xFF49371F.toInt() else 0xFF171E2A.toInt(),
+                        if (i == style) 0xFFE0B35E.toInt() else 0xFF465064.toInt(), 14f)
                 }
             }
         }
@@ -372,46 +404,89 @@ class MainActivity : ComponentActivity() {
 
 class SpectrumView(context: android.content.Context) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var bars = FloatArray(36)
+    private var levels = FloatArray(44) { 0.025f }
     private var style = 0
+
     fun setStyle(value: Int) { style = value; invalidate() }
+
     fun updateFft(fft: ByteArray) {
-        val values = FloatArray(bars.size)
-        for (i in values.indices) {
-            val index = 2 + i * 2
-            if (index + 1 < fft.size) {
-                val re = fft[index].toInt()
-                val im = fft[index + 1].toInt()
-                values[i] = (kotlin.math.sqrt((re * re + im * im).toDouble()).toFloat() / 24f).coerceIn(0.04f, 1f)
+        val targets = FloatArray(levels.size)
+        val maxBin = (fft.size / 2 - 1).coerceAtLeast(2)
+        for (i in targets.indices) {
+            val low = (kotlin.math.exp(kotlin.math.ln(2.0) +
+                (i.toDouble() / targets.size) * kotlin.math.ln(maxBin.toDouble() / 2.0))).toInt().coerceIn(1, maxBin)
+            val high = (kotlin.math.exp(kotlin.math.ln(2.0) +
+                ((i + 1).toDouble() / targets.size) * kotlin.math.ln(maxBin.toDouble() / 2.0))).toInt()
+                .coerceIn(low + 1, maxBin + 1)
+            var peak = 0.0
+            for (bin in low until high) {
+                val index = bin * 2
+                if (index + 1 < fft.size) {
+                    val re = fft[index].toInt()
+                    val im = fft[index + 1].toInt()
+                    val magnitude = kotlin.math.sqrt((re * re + im * im).toDouble())
+                    if (magnitude > peak) peak = magnitude
+                }
             }
+            targets[i] = ((kotlin.math.ln(1.0 + peak) / kotlin.math.ln(129.0)) * 0.96 + 0.025)
+                .toFloat().coerceIn(0.025f, 1f)
         }
-        post { bars = values; invalidate() }
+        post {
+            for (i in levels.indices) {
+                val factor = if (targets[i] > levels[i]) 0.42f else 0.16f
+                levels[i] += (targets[i] - levels[i]) * factor
+            }
+            invalidate()
+        }
     }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawColor(android.graphics.Color.rgb(17, 24, 39))
-        val gap = 5f
-        val w = (width - gap * (bars.size + 1)) / bars.size
-        val base = height - 14f
-        bars.forEachIndexed { i, value ->
-            val v = value.coerceIn(0.04f, 1f)
-            val h = (height - 34f) * v
-            paint.color = when (i % 3) {
-                0 -> android.graphics.Color.rgb(34, 155, 105)
-                1 -> android.graphics.Color.WHITE
-                else -> android.graphics.Color.rgb(190, 58, 70)
+        canvas.drawColor(0xFF0B111B.toInt())
+        val gold = 0xFFE4B85F.toInt()
+        val paleGold = 0xFFFFE6A8.toInt()
+        val centerY = height * 0.53f
+        paint.color = 0xFF293241.toInt()
+        paint.strokeWidth = 1f
+        canvas.drawLine(14f, centerY, width - 14f, centerY, paint)
+
+        val count = levels.size
+        val gap = 4f
+        val barWidth = ((width - 36f - gap * (count - 1)) / count).coerceAtLeast(1f)
+        val maxHeight = height * 0.72f
+
+        if (style == 1) {
+            val path = android.graphics.Path()
+            for (i in levels.indices) {
+                val x = 18f + i * (barWidth + gap) + barWidth / 2f
+                val y = centerY - levels[i] * maxHeight * 0.48f
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }
-            val x = gap + i * (w + gap)
-            when (style) {
-                0 -> canvas.drawRoundRect(x, base - h, x + w, base, 5f, 5f, paint)
-                1 -> {
-                    val center = height / 2f
-                    canvas.drawRoundRect(x, center - h / 2, x + w, center + h / 2, 5f, 5f, paint)
-                }
-                else -> {
-                    val pulse = h * (if (i % 2 == 0) 1f else 0.65f)
-                    canvas.drawCircle(x + w / 2, base - pulse / 2, (w / 2).coerceAtLeast(2f), paint)
-                }
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2.4f
+            paint.strokeCap = Paint.Cap.ROUND
+            paint.color = paleGold
+            canvas.drawPath(path, paint)
+            paint.style = Paint.Style.FILL
+            for (i in levels.indices step 4) {
+                val x = 18f + i * (barWidth + gap) + barWidth / 2f
+                val y = centerY - levels[i] * maxHeight * 0.48f
+                paint.color = gold
+                canvas.drawCircle(x, y, 2.2f, paint)
+            }
+            return
+        }
+
+        levels.forEachIndexed { i, level ->
+            val x = 18f + i * (barWidth + gap)
+            val h = (level * maxHeight).coerceAtLeast(3f)
+            paint.color = if (i % 4 == 0) paleGold else gold
+            if (style == 0) {
+                canvas.drawRoundRect(x, centerY - h, x + barWidth, centerY, barWidth / 2, barWidth / 2, paint)
+            } else {
+                val radius = (barWidth * 0.46f).coerceAtLeast(1.2f)
+                canvas.drawCircle(x + barWidth / 2, centerY - h * 0.58f, radius, paint)
+                canvas.drawCircle(x + barWidth / 2, centerY + h * 0.58f, radius, paint)
             }
         }
     }
