@@ -35,6 +35,24 @@ jobs:
           test -d /tmp/pahlavi-project/PahlaviStudio_SoundFrame
           cp -a /tmp/pahlavi-project/PahlaviStudio_SoundFrame/. .
 
+      - name: Inspect source files before feature updates
+        run: |
+          echo "=== SOURCE FILE INVENTORY ==="
+          find src -type f 2>/dev/null | sort
+          echo "=== PROJECT CONFIG ==="
+          sed -n '1,220p' package.json
+          echo "=== APP ENTRY FILES ==="
+          for f in index.html src/*; do
+            if [ -f "$f" ]; then
+              case "$f" in
+                *.js|*.jsx|*.ts|*.tsx|*.css|*.html)
+                  echo "===== FILE: $f ====="
+                  sed -n '1,360p' "$f"
+                  ;;
+              esac
+            fi
+          done
+
       - name: Align Capacitor CLI with Capacitor 8
         run: npm pkg set 'devDependencies.@capacitor/cli=^8.6.2'
 
