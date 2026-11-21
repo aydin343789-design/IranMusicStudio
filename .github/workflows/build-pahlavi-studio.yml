@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - feature/pahlavi-studio-soundframe
-    paths:
-      - PahlaviStudio_SoundFrame_full_project.zip
   workflow_dispatch:
 
 permissions:
@@ -31,9 +29,9 @@ jobs:
 
       - name: Unpack the prepared Pahlavi Studio project
         run: |
-          test -f PahlaviStudio_SoundFrame_full_project.zip
+          test -f "PahlaviStudio_SoundFrame_full_project .zip"
           mkdir -p /tmp/pahlavi-project
-          unzip -q PahlaviStudio_SoundFrame_full_project.zip -d /tmp/pahlavi-project
+          unzip -q "PahlaviStudio_SoundFrame_full_project .zip" -d /tmp/pahlavi-project
           test -d /tmp/pahlavi-project/PahlaviStudio_SoundFrame
           cp -a /tmp/pahlavi-project/PahlaviStudio_SoundFrame/. .
 
