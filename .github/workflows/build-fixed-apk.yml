@@ -61,3 +61,4 @@ jobs:
           path: build-src/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+# Rebuild trigger: use the latest uploaded fixed source archive.
