@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           p = Path("build-src/src/App.tsx")
           s = p.read_text()
-          anchor = '  const duration = clips.length ? clipTotal : hasAudio ? media.audioDur : 0;\\n'
+          anchor = '  const duration = clips.length ? clipTotal : hasAudio ? media.audioDur : 0;\n'
           effect = """  // A single still image is a full-length music-video background.
             // This avoids requiring any video decoder and keeps the image visible for the whole song.
             useEffect(() => {
