@@ -35,6 +35,28 @@ jobs:
           unzip -q music-video-equalizer-mixer-fixed.zip -d build-src
           test -f build-src/package.json
           test -f build-src/android/app/build.gradle
+      - name: Make a single photo cover the complete soundtrack
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("build-src/src/App.tsx")
+          s = p.read_text()
+          anchor = '  const duration = clips.length ? clipTotal : hasAudio ? media.audioDur : 0;\\n'
+          effect = """  // A single still image is a full-length music-video background.
+            // This avoids requiring any video decoder and keeps the image visible for the whole song.
+            useEffect(() => {
+              if (!hasAudio || clips.length !== 1 || clips[0].kind !== "image") return;
+              const target = Math.max(0.1, media.audioDur);
+              if (Math.abs(clips[0].dur - target) < 0.05) return;
+              setClips([{ ...clips[0], dur: target }]);
+            }, [hasAudio, media.audioDur, clips]);
+          """
+          if "A single still image is a full-length music-video background." not in s:
+              if anchor not in s:
+                  raise SystemExit("Could not locate duration declaration in App.tsx")
+              s = s.replace(anchor, anchor + effect, 1)
+              p.write_text(s)
+          PY
       - name: Preserve existing Android app identity
         working-directory: build-src
         run: |
